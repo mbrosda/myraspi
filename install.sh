@@ -106,13 +106,13 @@ fi
 # pip3 install docker-compose # doesn't work any more, see also https://www.kali.org/blog/python-externally-managed/#:~:text=This%20environment%20is%20externally%20managed%20%E2%95%B0%E2%94%80%3E%20To%20install,a%20virtual%20environment%20using%20python3%20-m%20venv%20path%2Fto%2Fvenv.
 # for docker-compose see https://stackoverflow.com/questions/75608323/how-do-i-solve-error-externally-managed-environment-every-time-i-use-pip-3
 
-[ ! -f ./status/dockercompose_installed ] \
-    && apt-get install -y libffi-dev libssl-dev \
-    && apt     install -y python3-dev \
-    && apt-get install -y python3 python3-pip \
-    && apt install docker-compose \
+[ ! -f ./status/dockercompose_installed ]                                \
+    && apt-get install -y libffi-dev libssl-dev                          \
+    && apt     install -y python3-dev                                    \
+    && apt-get install -y python3 python3-pip                            \
+    && apt     install -y docker-compose                                 \
     && echo "net.ipv4.ip_unprivileged_port_start=80" >> /etc/sysctl.conf \
-    && sysctl --system \
+    && sysctl --system                                                   \
     && touch ./status/dockercompose_installed
 
 #------------------------------------------------
