@@ -26,6 +26,7 @@ mkdir -p ./status
 #------------------------------------------------
 # mount my SSD
 #------------------------------------------------
+mkdir -p /ssd && chmod 777 /ssd
 if grep '/ssd' /etc/fstab > /dev/null
 then
     echo "SSD is already in /etc/fstab"
@@ -40,6 +41,7 @@ then
 else
     echo "mounting SSD ..."
     mount /ssd
+    systemctl daemon-reload
 fi
 
 #------------------------------------------------
@@ -54,7 +56,7 @@ fi
 #--------------------------------------------------------
 # redirect docker directory (contains images etc.) to ssd
 #--------------------------------------------------------
-if [ -f "/ssd/docker" -a ! -f ./status/docker_redirected ]
+if [ -d "/ssd/docker" -a ! -f ./status/docker_redirected ]
 then
     #----------------------------------------------------
     # update exiting daemon.json and point to /ssd/docker
@@ -73,8 +75,9 @@ then
         chmod 644 /etc/docker/daemon.json
     fi
     systemctl start docker && echo "docker service started"
+
+    touch ./status/docker_redirected
 fi
-touch ./status/docker_redirected
 
 #------------------------------------------------
 # UNINSTALL
