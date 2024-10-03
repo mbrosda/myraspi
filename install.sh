@@ -25,7 +25,16 @@ apt install -y nmap   # used for portscanning devices
 # install docker and allow current user to use it
 # see https://raspberrytips.com/docker-on-raspberry-pi/
 #------------------------------------------------
-[ ! -f ./status/docker_installed ] && curl -sSL https://get.docker.com | sh && usermod -aG docker $USERNAME && touch ./status/docker_installed
+[ ! -f ./status/docker_installed ]           \
+    && curl -sSL https://get.docker.com | sh \
+    && usermod -aG docker $USERNAME          \
+    && touch ./status/docker_installed
+
+
+sudo systemctl stop docker && echo "docker service stopped"
+#sudo mv /var/lib/docker/ /path/to/new/docker/
+#sudo ln -s /path/to/new/docker/ /var/lib/docker
+sudo systemctl start docker && echo "docker service started"
 
 #------------------------------------------------
 # UNINSTALL
@@ -72,4 +81,3 @@ apt install -y nmap   # used for portscanning devices
     && apt     install -y mosquitto-clients \
     && apt-get install -y jq                \
     && touch ./status/tools_installed
-
