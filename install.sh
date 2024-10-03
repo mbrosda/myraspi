@@ -1,6 +1,13 @@
 #!/bin/bash
 
 #------------------------------------------------
+# initial settings
+#------------------------------------------------
+set -e
+USERNAME=admin
+mkdir -p ./status
+
+#------------------------------------------------
 # perform updates
 #------------------------------------------------
 [ ! -f ./status/update_done ]  && apt update     && touch ./status/update_done
@@ -9,10 +16,16 @@
 #------------------------------------------------
 # Tools
 #------------------------------------------------
-[ ! -f ./status/netcat_installed ]  && apt-get -y install netcat-traditional && touch ./status/netcat_installed
-[ ! -f ./status/telnet_installed ]  && apt-get -y install telnet             && touch ./status/telnet_installed
+[ ! -f ./status/tools1_installed ]               \
+    && apt-get     -y install netcat-traditional \
+    && apt         -y install nmap               \
+    && apt-get     -y install telnet             \
+    && apt-get     -y install jq                 \
+    && touch ./status/tools1_installed
 
-
+#------------------------------------------------
+# mount my SSD
+#------------------------------------------------
 if grep '/ssd' /etc/fstab > /dev/null
 then
     echo "SSD is already in /etc/fstab"
@@ -21,26 +34,13 @@ else
     echo "UUID=58131522-04c6-4a7b-9d48-5ab79f78f26a	/ssd	ext4	rw,nosuid,nodev,relatime,errors=remount-ro,uhelper=udisks2" >> /etc/fstab
 fi
 
-set -e
-
-USERNAME=admin
-
-mkdir -p ./status
-
-
-# #------------------------------------------------
-# # perform updates
-# #------------------------------------------------
-# apt update
-# apt upgrade -y
-# 
-# #------------------------------------------------
-# # Tools
-# #------------------------------------------------
-# apt-get -y install netcat-traditional
-# apt-get -y install telnet
-apt install -y nmap   # used for portscanning devices
-
+if mount | grep '/ssd[	 ]*type' # [] contains TAB and SPACE
+then
+    echo "SSD is already mounted"
+else
+    echo "mounting SSD ..."
+    mount /ssd
+fi
 
 #------------------------------------------------
 # install docker and allow current user to use it
@@ -51,11 +51,30 @@ apt install -y nmap   # used for portscanning devices
     && usermod -aG docker $USERNAME          \
     && touch ./status/docker_installed
 
-
-sudo systemctl stop docker && echo "docker service stopped"
-#sudo mv /var/lib/docker/ /path/to/new/docker/
-#sudo ln -s /path/to/new/docker/ /var/lib/docker
-sudo systemctl start docker && echo "docker service started"
+#--------------------------------------------------------
+# redirect docker directory (contains images etc.) to ssd
+#--------------------------------------------------------
+if [ -f "/ssd/docker" -a ! -f ./status/docker_redirected ]
+then
+    #----------------------------------------------------
+    # update exiting daemon.json and point to /ssd/docker
+    #----------------------------------------------------
+    systemctl stop docker && echo "docker service stopped"
+    if [ -f "/etc/docker/daemon.json" ]
+    then
+        jq '. += { "data-root": "/ssd/docker" }' < /etc/docker/daemon.json > /etc/docker/daemon.json.tmp \
+            && mv /etc/docker/daemon.json.tmp /etc/docker/daemon.json                                    \
+            && chmod 644 /etc/docker/daemon.json
+    else
+        #------------------------------------------------
+        # create new daemon.json and point to /ssd/docker
+        #------------------------------------------------
+        echo "{ \"data-root\": \"/ssd/docker\" }" > /etc/docker/daemon.json
+        chmod 644 /etc/docker/daemon.json
+    fi
+    systemctl start docker && echo "docker service started"
+fi
+touch ./status/docker_redirected
 
 #------------------------------------------------
 # UNINSTALL
@@ -100,5 +119,4 @@ sudo systemctl start docker && echo "docker service started"
     && apt-get install -y apache2-utils     \
     && apt-get install -y dnsutils          \
     && apt     install -y mosquitto-clients \
-    && apt-get install -y jq                \
     && touch ./status/tools_installed
